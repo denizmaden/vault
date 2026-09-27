@@ -1,0 +1,27 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\Vault.Services.Identity.Application\Vault.Services.Identity.Application.csproj" />
+    <ProjectReference Include="..\Vault.Services.Identity.Domain\Vault.Services.Identity.Domain.csproj" />
+	<ProjectReference Include="..\..\..\platform\Vault.Platform.Persistence.EntityFramework\Vault.Platform.Persistence.EntityFramework.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+  	<PackageReference Include="Duende.IdentityServer.EntityFramework" Version="7.4.7" />
+  	<PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="10.0.0" />
+  	<PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.0">
+  		<PrivateAssets>all</PrivateAssets>
+  		<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+  	</PackageReference>
+  	<PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.10" />
+  	<PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="10.0.0" />
+  	<PackageReference Include="System.Security.Cryptography.Xml" Version="10.0.6" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+</Project>
