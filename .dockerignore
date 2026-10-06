@@ -1,0 +1,9 @@
+.git
+.github
+.vs
+.config
+Codex
+**/bin
+**/obj
+**/*.user
+**/tempkey.jwk
