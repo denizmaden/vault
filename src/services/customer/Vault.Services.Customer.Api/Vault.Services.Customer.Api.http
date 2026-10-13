@@ -1,0 +1,6 @@
+@Vault.Services.Customer.Api_HostAddress = http://localhost:5048
+
+GET {{Vault.Services.Customer.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
