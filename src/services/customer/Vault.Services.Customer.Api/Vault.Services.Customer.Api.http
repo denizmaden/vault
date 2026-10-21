@@ -1,6 +1,68 @@
-@Vault.Services.Customer.Api_HostAddress = http://localhost:5048
+@identityHost = http://localhost:8080
+@customerHost = http://localhost:8081
+@email = customer@example.com
+@password = Customer123!
+@identityUserId = 00000000-0000-0000-0000-000000000001
+@customerId = 00000000-0000-0000-0000-000000000001
+@accessToken = paste-access-token-here
 
-GET {{Vault.Services.Customer.Api_HostAddress}}/weatherforecast/
+### Service information
+GET {{customerHost}}/
 Accept: application/json
 
-###
+### Liveness check
+GET {{customerHost}}/health/live
+Accept: application/json
+
+### Readiness check
+GET {{customerHost}}/health/ready
+Accept: application/json
+
+### Register an Identity user
+POST {{identityHost}}/api/identity-users
+Content-Type: application/json
+
+{
+  "email": "{{email}}",
+  "password": "{{password}}"
+}
+
+### Get an access token, then copy access_token into the accessToken variable above
+POST {{identityHost}}/connect/token
+Content-Type: application/x-www-form-urlencoded
+
+client_id=vault-swagger&client_secret=vault-swagger-secret&grant_type=password&username={{email}}&password={{password}}&scope=vault.customer.api
+
+### Create a customer profile
+POST {{customerHost}}/api/customer-profiles
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "identityUserId": "{{identityUserId}}",
+  "firstName": "Vault",
+  "lastName": "Customer",
+  "displayName": "Vault Customer",
+  "preferredLanguage": "tr-TR"
+}
+
+### Get a customer profile
+GET {{customerHost}}/api/customer-profiles/{{customerId}}
+Authorization: Bearer {{accessToken}}
+Accept: application/json
+
+### Update a customer profile
+PUT {{customerHost}}/api/customer-profiles/{{customerId}}
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "firstName": "Updated",
+  "lastName": "Customer",
+  "displayName": "Updated Customer",
+  "preferredLanguage": "en-US"
+}
+
+### Complete customer onboarding
+POST {{customerHost}}/api/customer-profiles/{{customerId}}/complete-onboarding
+Authorization: Bearer {{accessToken}}
