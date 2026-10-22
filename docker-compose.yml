@@ -1,6 +1,43 @@
 name: vault
 
 services:
+  kafka:
+    image: confluentinc/cp-kafka:7.7.1
+    environment:
+      KAFKA_NODE_ID: "1"
+      KAFKA_PROCESS_ROLES: "broker,controller"
+      KAFKA_LISTENERS: "PLAINTEXT://kafka:9092,CONTROLLER://kafka:9093,PLAINTEXT_HOST://0.0.0.0:29092"
+      KAFKA_ADVERTISED_LISTENERS: "PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092"
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: "CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT"
+      KAFKA_CONTROLLER_QUORUM_VOTERS: "1@kafka:9093"
+      KAFKA_CONTROLLER_LISTENER_NAMES: "CONTROLLER"
+      KAFKA_INTER_BROKER_LISTENER_NAME: "PLAINTEXT"
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: "1"
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: "1"
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: "1"
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
+      CLUSTER_ID: "MkU3OEVBNTcwNTJENDM2Qk"
+    ports:
+      - "29092:29092"
+    healthcheck:
+      test: ["CMD-SHELL", "cub kafka-ready -b localhost:29092 1 30"]
+      interval: 10s
+      timeout: 30s
+      retries: 20
+      start_period: 20s
+    volumes:
+      - kafka-data:/var/lib/kafka/data
+
+  kafka-init:
+    image: confluentinc/cp-kafka:7.7.1
+    depends_on:
+      kafka:
+        condition: service_healthy
+    command: >
+      /bin/sh -c "
+      kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic vault.ledger.events --partitions 1 --replication-factor 1
+      "
+
   identity-db:
     image: mcr.microsoft.com/mssql/server:2022-latest
     environment:
@@ -74,6 +111,52 @@ services:
     ports:
       - "8081:8080"
 
+  ledger-db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "Your_strong_password123"
+    ports:
+      - "14335:1433"
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P Your_strong_password123 -Q 'SELECT 1' -C || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+    volumes:
+      - ledger-data:/var/opt/mssql
+
+  ledger-api:
+    build:
+      context: .
+      dockerfile: src/services/ledger/Vault.Services.Ledger.Api/Dockerfile
+    depends_on:
+      ledger-db:
+        condition: service_healthy
+      identity-api:
+        condition: service_started
+      kafka-init:
+        condition: service_completed_successfully
+      otel-collector:
+        condition: service_started
+    environment:
+      ASPNETCORE_ENVIRONMENT: "Development"
+      ConnectionStrings__LedgerDatabase: "Server=ledger-db,1433;Database=VaultLedger;User Id=sa;Password=Your_strong_password123;TrustServerCertificate=True"
+      Authentication__Authority: "http://localhost:8080"
+      Authentication__MetadataAddress: "http://identity-api:8080/.well-known/openid-configuration"
+      Authentication__RequireHttpsMetadata: "false"
+      Messaging__Provider: "Kafka"
+      Messaging__Kafka__BootstrapServers: "kafka:9092"
+      LedgerMessaging__EventsDestination: "vault.ledger.events"
+      Observability__Logging__Provider: "Serilog"
+      Observability__Tracing__Enabled: "true"
+      Observability__Metrics__Enabled: "true"
+      OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector:4317"
+      VAULT_OTEL_TRACE_SAMPLING_RATIO: "1.0"
+    ports:
+      - "8082:8080"
+
   jaeger:
     image: jaegertracing/all-in-one:1.57
     environment:
@@ -146,8 +229,10 @@ services:
       - "3000:3000"
 
 volumes:
+  kafka-data:
   identity-data:
   customer-data:
+  ledger-data:
   prometheus-data:
   loki-data:
   alloy-data:
