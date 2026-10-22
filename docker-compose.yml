@@ -157,6 +157,73 @@ services:
     ports:
       - "8082:8080"
 
+  wallet-db:
+    image: mongo:8.0
+    ports:
+      - "27018:27017"
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+    volumes:
+      - wallet-data:/data/db
+
+  wallet-cache:
+    image: redis:7.4-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "6380:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 5s
+    volumes:
+      - wallet-cache-data:/data
+
+  wallet-api:
+    build:
+      context: .
+      dockerfile: src/services/wallet/Vault.Services.Wallet.Api/Dockerfile
+    depends_on:
+      wallet-db:
+        condition: service_healthy
+      wallet-cache:
+        condition: service_healthy
+      identity-api:
+        condition: service_started
+      kafka-init:
+        condition: service_completed_successfully
+      otel-collector:
+        condition: service_started
+    environment:
+      ASPNETCORE_ENVIRONMENT: "Development"
+      Authentication__Authority: "http://localhost:8080"
+      Authentication__MetadataAddress: "http://identity-api:8080/.well-known/openid-configuration"
+      Authentication__RequireHttpsMetadata: "false"
+      Mongo__ConnectionString: "mongodb://wallet-db:27017"
+      Mongo__DatabaseName: "vault-wallet"
+      Mongo__WalletsCollectionName: "wallets"
+      Messaging__Provider: "Kafka"
+      Messaging__Kafka__BootstrapServers: "kafka:9092"
+      WalletMessaging__LedgerEventsDestination: "vault.ledger.events"
+      WalletMessaging__ConsumerGroupId: "vault-wallet-projection"
+      Caching__Enabled: "true"
+      Caching__Provider: "Redis"
+      Caching__Redis__ConnectionString: "wallet-cache:6379"
+      Caching__Redis__InstanceName: "vault-wallet:"
+      WalletCache__WalletDetailsTtlSeconds: "300"
+      Observability__Logging__Provider: "Serilog"
+      Observability__Tracing__Enabled: "true"
+      Observability__Metrics__Enabled: "true"
+      OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector:4317"
+      VAULT_OTEL_TRACE_SAMPLING_RATIO: "1.0"
+    ports:
+      - "8083:8080"
+
   jaeger:
     image: jaegertracing/all-in-one:1.57
     environment:
@@ -233,6 +300,8 @@ volumes:
   identity-data:
   customer-data:
   ledger-data:
+  wallet-data:
+  wallet-cache-data:
   prometheus-data:
   loki-data:
   alloy-data:

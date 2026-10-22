@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\Vault.Platform.Caching.Abstractions\Vault.Platform.Caching.Abstractions.csproj" />
+    <ProjectReference Include="..\Vault.Platform.Caching.InMemory\Vault.Platform.Caching.InMemory.csproj" />
+    <ProjectReference Include="..\Vault.Platform.Caching.Redis\Vault.Platform.Caching.Redis.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+</Project>

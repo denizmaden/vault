@@ -4,7 +4,7 @@ using Vault.Platform.Messaging.Kafka.Configuration;
 
 namespace Vault.Platform.Messaging.Kafka;
 
-public sealed class KafkaConsumerFactory(KafkaProducerSettings settings) : IKafkaConsumerFactory
+internal sealed class KafkaConsumerFactory(KafkaProducerSettings settings) : IKafkaConsumerFactory
 {
     public IConsumer<string, string> Create(string groupId)
     {

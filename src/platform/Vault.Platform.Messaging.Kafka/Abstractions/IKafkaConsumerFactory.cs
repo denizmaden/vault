@@ -2,7 +2,7 @@ using Confluent.Kafka;
 
 namespace Vault.Platform.Messaging.Kafka.Abstractions;
 
-public interface IKafkaConsumerFactory
+internal interface IKafkaConsumerFactory
 {
     IConsumer<string, string> Create(string groupId);
 }

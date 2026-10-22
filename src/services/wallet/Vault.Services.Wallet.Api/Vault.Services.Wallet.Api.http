@@ -1,0 +1,57 @@
+@identityHost = http://localhost:8080
+@walletHost = http://localhost:8083
+@email = wallet@example.com
+@password = Wallet123!
+@walletId = 33333333-3333-3333-3333-333333333333
+@ownerId = 11111111-1111-1111-1111-111111111111
+@accessToken = paste-access-token-here
+
+### Service information
+GET {{walletHost}}/
+Accept: application/json
+
+### Liveness check
+GET {{walletHost}}/health/live
+Accept: application/json
+
+### Readiness check (MongoDB and messaging provider)
+GET {{walletHost}}/health/ready
+Accept: application/json
+
+### Register an Identity user
+POST {{identityHost}}/api/identity-users
+Content-Type: application/json
+
+{
+  "email": "{{email}}",
+  "password": "{{password}}"
+}
+
+### Get a Wallet access token, then copy access_token above
+POST {{identityHost}}/connect/token
+Content-Type: application/x-www-form-urlencoded
+
+client_id=vault-swagger&client_secret=vault-swagger-secret&grant_type=password&username={{email}}&password={{password}}&scope=vault.wallet.api
+
+### Get wallet
+GET {{walletHost}}/api/wallets/{{walletId}}
+Authorization: Bearer {{accessToken}}
+Accept: application/json
+
+### Get wallets by owner
+GET {{walletHost}}/api/wallets/owners/{{ownerId}}
+Authorization: Bearer {{accessToken}}
+Accept: application/json
+
+### Project account-opened event manually
+POST {{walletHost}}/api/wallet-projections/ledger-events/opened
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "walletId": "{{walletId}}",
+  "ownerId": "{{ownerId}}",
+  "currency": "TRY",
+  "version": 1,
+  "occurredOnUtc": "2026-01-01T00:00:00Z"
+}

@@ -39,6 +39,7 @@ public static class DependencyInjection
         });
 
         services.AddSingleton<IMessagePublisher, KafkaMessagePublisher>();
+        services.AddSingleton<IMessageSubscriber, KafkaMessageSubscriber>();
         services.AddSingleton<IKafkaConsumerFactory, KafkaConsumerFactory>();
         services.AddHealthChecks()
             .AddCheck<KafkaHealthCheck>("messaging-kafka", tags: ["ready"]);
