@@ -3,6 +3,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Vault.Platform.Messaging.Abstractions\Vault.Platform.Messaging.Abstractions.csproj" />
     <ProjectReference Include="..\Vault.Platform.Messaging.Kafka\Vault.Platform.Messaging.Kafka.csproj" />
+    <ProjectReference Include="..\Vault.Platform.Messaging.RabbitMQ\Vault.Platform.Messaging.RabbitMQ.csproj" />
   </ItemGroup>
 
   <ItemGroup>

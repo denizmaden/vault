@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <ItemGroup>
+    <ProjectReference Include="..\Vault.Services.Transaction.Application\Vault.Services.Transaction.Application.csproj" />
+    <ProjectReference Include="..\Vault.Services.Transaction.Infrastructure\Vault.Services.Transaction.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\..\building-blocks\Vault.BuildingBlocks.Api\Vault.BuildingBlocks.Api.csproj" />
+    <ProjectReference Include="..\..\..\platform\Vault.Platform.Messaging\Vault.Platform.Messaging.csproj" />
+    <ProjectReference Include="..\..\..\platform\Vault.Platform.Observability\Vault.Platform.Observability.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.13">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore" Version="10.0.13" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="10.3.1" />
+  </ItemGroup>
+
+</Project>

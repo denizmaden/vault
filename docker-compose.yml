@@ -224,6 +224,76 @@ services:
     ports:
       - "8083:8080"
 
+  rabbitmq:
+    image: rabbitmq:3.13-management
+    environment:
+      RABBITMQ_DEFAULT_USER: "guest"
+      RABBITMQ_DEFAULT_PASS: "guest"
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    healthcheck:
+      test: ["CMD-SHELL", "rabbitmq-diagnostics -q ping || exit 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 20
+      start_period: 20s
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+
+  transaction-db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "Your_strong_password123"
+    ports:
+      - "14336:1433"
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P Your_strong_password123 -Q 'SELECT 1' -C || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+    volumes:
+      - transaction-data:/var/opt/mssql
+
+  transaction-api:
+    build:
+      context: .
+      dockerfile: src/services/transaction/Vault.Services.Transaction.Api/Dockerfile
+    depends_on:
+      transaction-db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      identity-api:
+        condition: service_started
+      otel-collector:
+        condition: service_started
+    environment:
+      ASPNETCORE_ENVIRONMENT: "Development"
+      ConnectionStrings__TransactionDatabase: "Server=transaction-db,1433;Database=VaultTransaction;User Id=sa;Password=Your_strong_password123;TrustServerCertificate=True"
+      Authentication__Authority: "http://localhost:8080"
+      Authentication__MetadataAddress: "http://identity-api:8080/.well-known/openid-configuration"
+      Authentication__RequireHttpsMetadata: "false"
+      Messaging__Provider: "RabbitMQ"
+      Messaging__RabbitMq__HostName: "rabbitmq"
+      Messaging__RabbitMq__Port: "5672"
+      Messaging__RabbitMq__UserName: "guest"
+      Messaging__RabbitMq__Password: "guest"
+      Messaging__RabbitMq__VirtualHost: "/"
+      TransactionMessaging__RequestedQueue: "vault.transaction.transfer.requested"
+      TransactionMessaging__ReservedQueue: "vault.transaction.transfer.funds-reserved"
+      TransactionMessaging__CompletedQueue: "vault.transaction.transfer.completed"
+      TransactionMessaging__FailedQueue: "vault.transaction.transfer.failed"
+      Observability__Logging__Provider: "Serilog"
+      Observability__Tracing__Enabled: "true"
+      Observability__Metrics__Enabled: "true"
+      OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector:4317"
+      VAULT_OTEL_TRACE_SAMPLING_RATIO: "1.0"
+    ports:
+      - "8084:8080"
+
   jaeger:
     image: jaegertracing/all-in-one:1.57
     environment:
@@ -302,6 +372,8 @@ volumes:
   ledger-data:
   wallet-data:
   wallet-cache-data:
+  rabbitmq-data:
+  transaction-data:
   prometheus-data:
   loki-data:
   alloy-data:

@@ -1,0 +1,61 @@
+@identityHost = http://localhost:8080
+@transactionHost = http://localhost:8084
+@email = transaction@example.com
+@password = Transaction123!
+@transactionId = 77777777-7777-7777-7777-777777777777
+@customerId = 11111111-1111-1111-1111-111111111111
+@sourceWalletId = 33333333-3333-3333-3333-333333333333
+@destinationWalletId = 55555555-5555-5555-5555-555555555555
+@accessToken = paste-access-token-here
+
+### Service information
+GET {{transactionHost}}/
+Accept: application/json
+
+### Liveness check
+GET {{transactionHost}}/health/live
+Accept: application/json
+
+### Readiness check (SQL Server and messaging provider)
+GET {{transactionHost}}/health/ready
+Accept: application/json
+
+### Register an Identity user
+POST {{identityHost}}/api/identity-users
+Content-Type: application/json
+
+{
+  "email": "{{email}}",
+  "password": "{{password}}"
+}
+
+### Get a Transaction access token, then copy access_token above
+POST {{identityHost}}/connect/token
+Content-Type: application/x-www-form-urlencoded
+
+client_id=vault-swagger&client_secret=vault-swagger-secret&grant_type=password&username={{email}}&password={{password}}&scope=vault.transaction.api
+
+### Create transfer; RabbitMQ saga should move it to Completed
+POST {{transactionHost}}/api/transactions/transfers
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "transactionId": "{{transactionId}}",
+  "initiatingCustomerId": "{{customerId}}",
+  "sourceWalletId": "{{sourceWalletId}}",
+  "destinationWalletId": "{{destinationWalletId}}",
+  "currency": "TRY",
+  "amount": 42.50,
+  "reference": "rabbitmq-saga"
+}
+
+### Get transaction
+GET {{transactionHost}}/api/transactions/{{transactionId}}
+Authorization: Bearer {{accessToken}}
+Accept: application/json
+
+### Get transactions by customer
+GET {{transactionHost}}/api/transactions/customers/{{customerId}}
+Authorization: Bearer {{accessToken}}
+Accept: application/json

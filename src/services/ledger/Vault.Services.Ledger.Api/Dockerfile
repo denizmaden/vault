@@ -9,6 +9,7 @@ COPY ["src/platform/Vault.Platform.Persistence.Abstractions/Vault.Platform.Persi
 COPY ["src/platform/Vault.Platform.Persistence.EntityFramework/Vault.Platform.Persistence.EntityFramework.csproj", "src/platform/Vault.Platform.Persistence.EntityFramework/"]
 COPY ["src/platform/Vault.Platform.Messaging.Abstractions/Vault.Platform.Messaging.Abstractions.csproj", "src/platform/Vault.Platform.Messaging.Abstractions/"]
 COPY ["src/platform/Vault.Platform.Messaging.Kafka/Vault.Platform.Messaging.Kafka.csproj", "src/platform/Vault.Platform.Messaging.Kafka/"]
+COPY ["src/platform/Vault.Platform.Messaging.RabbitMQ/Vault.Platform.Messaging.RabbitMQ.csproj", "src/platform/Vault.Platform.Messaging.RabbitMQ/"]
 COPY ["src/platform/Vault.Platform.Messaging/Vault.Platform.Messaging.csproj", "src/platform/Vault.Platform.Messaging/"]
 COPY ["src/platform/Vault.Platform.Observability.Logging.NLog/Vault.Platform.Observability.Logging.NLog.csproj", "src/platform/Vault.Platform.Observability.Logging.NLog/"]
 COPY ["src/platform/Vault.Platform.Observability.Logging.Serilog/Vault.Platform.Observability.Logging.Serilog.csproj", "src/platform/Vault.Platform.Observability.Logging.Serilog/"]
