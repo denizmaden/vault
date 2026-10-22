@@ -294,6 +294,52 @@ services:
     ports:
       - "8084:8080"
 
+  reporting-db:
+    image: mongo:8.0
+    ports:
+      - "27019:27017"
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+    volumes:
+      - reporting-data:/data/db
+
+  reporting-api:
+    build:
+      context: .
+      dockerfile: src/services/reporting/Vault.Services.Reporting.Api/Dockerfile
+    depends_on:
+      reporting-db:
+        condition: service_healthy
+      identity-api:
+        condition: service_started
+      kafka-init:
+        condition: service_completed_successfully
+      otel-collector:
+        condition: service_started
+    environment:
+      ASPNETCORE_ENVIRONMENT: "Development"
+      Authentication__Authority: "http://localhost:8080"
+      Authentication__MetadataAddress: "http://identity-api:8080/.well-known/openid-configuration"
+      Authentication__RequireHttpsMetadata: "false"
+      Mongo__ConnectionString: "mongodb://reporting-db:27017"
+      Mongo__DatabaseName: "vault-reporting"
+      Mongo__ReportsCollectionName: "wallet_activity_reports"
+      Messaging__Provider: "Kafka"
+      Messaging__Kafka__BootstrapServers: "kafka:9092"
+      ReportingMessaging__LedgerEventsDestination: "vault.ledger.events"
+      ReportingMessaging__ConsumerGroupId: "vault-reporting-projection"
+      Observability__Logging__Provider: "Serilog"
+      Observability__Tracing__Enabled: "true"
+      Observability__Metrics__Enabled: "true"
+      OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector:4317"
+      VAULT_OTEL_TRACE_SAMPLING_RATIO: "1.0"
+    ports:
+      - "8085:8080"
+
   jaeger:
     image: jaegertracing/all-in-one:1.57
     environment:
@@ -374,6 +420,7 @@ volumes:
   wallet-cache-data:
   rabbitmq-data:
   transaction-data:
+  reporting-data:
   prometheus-data:
   loki-data:
   alloy-data:

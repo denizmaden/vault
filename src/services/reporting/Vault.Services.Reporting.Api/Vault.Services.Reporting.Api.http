@@ -1,0 +1,44 @@
+@identityHost = http://localhost:8080
+@reportingHost = http://localhost:8085
+@email = reporting@example.com
+@password = Reporting123!
+@walletId = 33333333-3333-3333-3333-333333333333
+@ownerId = 11111111-1111-1111-1111-111111111111
+@accessToken = paste-access-token-here
+
+### Service information
+GET {{reportingHost}}/
+Accept: application/json
+
+### Liveness check
+GET {{reportingHost}}/health/live
+Accept: application/json
+
+### Readiness check (MongoDB and messaging provider)
+GET {{reportingHost}}/health/ready
+Accept: application/json
+
+### Register an Identity user
+POST {{identityHost}}/api/identity-users
+Content-Type: application/json
+
+{
+  "email": "{{email}}",
+  "password": "{{password}}"
+}
+
+### Get a Reporting access token, then copy access_token above
+POST {{identityHost}}/connect/token
+Content-Type: application/x-www-form-urlencoded
+
+client_id=vault-swagger&client_secret=vault-swagger-secret&grant_type=password&username={{email}}&password={{password}}&scope=vault.reporting.api
+
+### Get wallet activity report
+GET {{reportingHost}}/api/reports/wallets/{{walletId}}
+Authorization: Bearer {{accessToken}}
+Accept: application/json
+
+### Get reports by owner
+GET {{reportingHost}}/api/reports/owners/{{ownerId}}/wallets
+Authorization: Bearer {{accessToken}}
+Accept: application/json

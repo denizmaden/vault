@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <ItemGroup>
+    <ProjectReference Include="..\Vault.Services.Reporting.Application\Vault.Services.Reporting.Application.csproj" />
+    <ProjectReference Include="..\Vault.Services.Reporting.Infrastructure\Vault.Services.Reporting.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\..\building-blocks\Vault.BuildingBlocks.Api\Vault.BuildingBlocks.Api.csproj" />
+    <ProjectReference Include="..\..\..\platform\Vault.Platform.Messaging\Vault.Platform.Messaging.csproj" />
+    <ProjectReference Include="..\..\..\platform\Vault.Platform.Observability\Vault.Platform.Observability.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="10.3.1" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+</Project>

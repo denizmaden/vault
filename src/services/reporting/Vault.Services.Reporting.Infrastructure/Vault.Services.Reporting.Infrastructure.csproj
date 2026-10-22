@@ -1,0 +1,20 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\Vault.Services.Reporting.Application\Vault.Services.Reporting.Application.csproj" />
+    <ProjectReference Include="..\Vault.Services.Reporting.Domain\Vault.Services.Reporting.Domain.csproj" />
+    <ProjectReference Include="..\..\..\platform\Vault.Platform.Persistence.Mongo\Vault.Platform.Persistence.Mongo.csproj" />
+    <ProjectReference Include="..\..\..\platform\Vault.Platform.Messaging.Abstractions\Vault.Platform.Messaging.Abstractions.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+</Project>
