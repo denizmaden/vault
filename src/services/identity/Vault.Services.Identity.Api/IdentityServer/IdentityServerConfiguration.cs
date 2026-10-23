@@ -41,6 +41,10 @@ public static class IdentityServerConfiguration
         new("vault.reporting", "Vault Reporting API")
         {
             Scopes = { "vault.reporting.api" }
+        },
+        new("vault.marketdata", "Vault MarketData API")
+        {
+            Scopes = { "vault.marketdata.api" }
         }
     ];
 
@@ -52,7 +56,8 @@ public static class IdentityServerConfiguration
         new("vault.ledger.api", "Vault Ledger API"),
         new("vault.wallet.api", "Vault Wallet API"),
         new("vault.transaction.api", "Vault Transaction API"),
-        new("vault.reporting.api", "Vault Reporting API")
+        new("vault.reporting.api", "Vault Reporting API"),
+        new("vault.marketdata.api", "Vault MarketData API")
     ];
 
     public static IEnumerable<Client> CreateClients(IdentityServerSettings settings) =>
@@ -74,7 +79,8 @@ public static class IdentityServerConfiguration
                 "vault.ledger.api",
                 "vault.wallet.api",
                 "vault.transaction.api",
-                "vault.reporting.api"
+                "vault.reporting.api",
+                "vault.marketdata.api"
             },
             AllowOfflineAccess = true,
             AccessTokenLifetime = settings.AccessTokenLifetimeSeconds,

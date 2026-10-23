@@ -1,0 +1,48 @@
+@marketDataHost = http://localhost:8086
+@identityHost = http://localhost:8080
+@accessToken = paste-marketdata-access-token-here
+
+### Optional token for private MarketData deployments
+# The default local configuration keeps market prices public. If
+# MarketDataSecurity:RequireAuthentication=true, obtain a token that contains
+# the vault.marketdata.api scope and use the Authorization header below.
+POST {{identityHost}}/connect/token
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=password&client_id=vault-swagger&username=replace-me&password=replace-me&scope=openid%20profile%20vault.marketdata.api
+
+### Service information
+GET {{marketDataHost}}/
+Accept: application/json
+
+### Liveness check
+GET {{marketDataHost}}/health/live
+Accept: application/json
+
+### Readiness check (Kafka and Redis)
+GET {{marketDataHost}}/health/ready
+Accept: application/json
+
+### Configured instruments
+GET {{marketDataHost}}/api/market-prices/instruments
+Accept: application/json
+# Authorization: Bearer {{accessToken}}
+
+### Latest prices
+GET {{marketDataHost}}/api/market-prices
+Accept: application/json
+# Authorization: Bearer {{accessToken}}
+
+### Filtered latest prices
+GET {{marketDataHost}}/api/market-prices?symbols=BTC-USDT,ETH-USDT
+Accept: application/json
+
+### Latest Bitcoin price
+GET {{marketDataHost}}/api/market-prices/BTC-USDT
+Accept: application/json
+
+### Raw WebSocket endpoint
+# Connect to ws://localhost:8086/ws/market-prices and send:
+# {"type":"subscribe","symbols":["BTC-USDT","ETH-USDT"]}
+# When authentication is required, connect to:
+# ws://localhost:8086/ws/market-prices?access_token={{accessToken}}

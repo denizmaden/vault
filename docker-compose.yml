@@ -35,7 +35,10 @@ services:
         condition: service_healthy
     command: >
       /bin/sh -c "
-      kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic vault.ledger.events --partitions 1 --replication-factor 1
+      kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic vault.ledger.events --partitions 1 --replication-factor 1 &&
+      kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic vault.market-data.prices --partitions 3 --replication-factor 1 --config cleanup.policy=compact &&
+      kafka-configs --bootstrap-server kafka:9092 --entity-type topics --entity-name vault.market-data.prices --alter --add-config cleanup.policy=compact &&
+      kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic vault.market-data.prices.dlq --partitions 1 --replication-factor 1
       "
 
   identity-db:
@@ -340,6 +343,69 @@ services:
     ports:
       - "8085:8080"
 
+  market-data-cache:
+    image: redis:7.4-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "6381:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 5s
+    volumes:
+      - market-data-cache-data:/data
+
+  market-data-api:
+    build:
+      context: .
+      dockerfile: src/services/market-data/Vault.Services.MarketData.Api/Dockerfile
+    depends_on:
+      market-data-cache:
+        condition: service_healthy
+      identity-api:
+        condition: service_started
+      kafka-init:
+        condition: service_completed_successfully
+      otel-collector:
+        condition: service_started
+    environment:
+      ASPNETCORE_ENVIRONMENT: "Development"
+      Authentication__Authority: "http://localhost:8080"
+      Authentication__MetadataAddress: "http://identity-api:8080/.well-known/openid-configuration"
+      Authentication__RequireHttpsMetadata: "false"
+      Messaging__Provider: "Kafka"
+      Messaging__Kafka__BootstrapServers: "kafka:9092"
+      MarketDataMessaging__PricesDestination: "vault.market-data.prices"
+      MarketDataMessaging__DeadLetterDestination: "vault.market-data.prices.dlq"
+      MarketDataMessaging__ProjectionConsumerGroupId: "vault-market-data-projection"
+      MarketDataMessaging__MaxProcessingAttempts: "5"
+      MarketDataMessaging__RetryInitialDelayMilliseconds: "200"
+      MarketDataMessaging__DeadLetterPublishRetrySeconds: "2"
+      MarketDataMessaging__RebuildSnapshotWhenEmpty: "true"
+      MarketDataMessaging__RebuildTimeoutSeconds: "60"
+      MarketDataRedis__ConnectionString: "market-data-cache:6379,abortConnect=false"
+      MarketDataRedis__SnapshotHashKey: "vault:market-data:{prices:v1}:values"
+      MarketDataRedis__SnapshotTimestampHashKey: "vault:market-data:{prices:v1}:timestamps"
+      MarketDataRedis__RealtimeChannel: "vault:market-data:realtime:v1"
+      MarketDataIngestion__Enabled: "true"
+      MarketDataSecurity__RequireAuthentication: "false"
+      MarketDataSecurity__AllowConnectionsWithoutOrigin: "true"
+      MarketDataSecurity__AllowedOrigins__0: "http://localhost:8086"
+      MarketDataSecurity__RestRequestsPerMinute: "120"
+      MarketDataSecurity__WebSocketHandshakesPerMinute: "20"
+      MarketDataWebSockets__MaxConnectionsPerClient: "5"
+      MarketDataWebSockets__CommandsPerMinute: "120"
+      Finnhub__ApiKey: "${FINNHUB_API_KEY:-}"
+      Observability__Logging__Provider: "Serilog"
+      Observability__Tracing__Enabled: "true"
+      Observability__Metrics__Enabled: "true"
+      OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector:4317"
+      VAULT_OTEL_TRACE_SAMPLING_RATIO: "1.0"
+    ports:
+      - "8086:8080"
+
   jaeger:
     image: jaegertracing/all-in-one:1.57
     environment:
@@ -421,6 +487,7 @@ volumes:
   rabbitmq-data:
   transaction-data:
   reporting-data:
+  market-data-cache-data:
   prometheus-data:
   loki-data:
   alloy-data:

@@ -5,5 +5,7 @@
 Codex
 **/bin
 **/obj
+**/node_modules
+src/services/market-data/Vault.Services.MarketData.Api/wwwroot
 **/*.user
 **/tempkey.jwk
