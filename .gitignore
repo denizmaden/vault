@@ -486,6 +486,9 @@ $RECYCLE.BIN/
 .env.*
 !.env.example
 
+# Generated performance reports (may contain test identity information)
+tests/load/results/
+
 # Code coverage output
 coverage/
 

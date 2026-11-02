@@ -1,0 +1,93 @@
+# Run only together with the root compose file and -p vault-load.
+# No development ports or volumes are reused. Requires Compose >= 2.24.4.
+x-api: &api
+  Authentication__Authority: http://identity-api:8080
+  Authentication__MetadataAddress: http://identity-api:8080/.well-known/openid-configuration
+  Authentication__RequireHttpsMetadata: "false"
+  VAULT_OTEL_TRACE_SAMPLING_RATIO: "0.1"
+
+services:
+  kafka:
+    ports: !reset []
+    environment:
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
+  identity-db:
+    ports: !reset []
+  customer-db:
+    ports: !reset []
+  ledger-db:
+    ports: !reset []
+  transaction-db:
+    ports: !reset []
+  wallet-db:
+    ports: !reset []
+  reporting-db:
+    ports: !reset []
+  wallet-cache:
+    ports: !reset []
+  rabbitmq:
+    ports: !reset []
+    healthcheck:
+      test: ["CMD-SHELL", "rabbitmq-diagnostics -q check_running && rabbitmq-diagnostics -q check_port_connectivity"]
+  identity-api:
+    ports: !reset []
+    environment:
+      IdentityServer__IssuerUri: http://identity-api:8080
+      IdentityServer__SwaggerClientId: vault-load
+      IdentityServer__SwaggerClientSecret: "${LOAD_CLIENT_SECRET:?Run tests/load/Run-LoadTests.ps1}"
+  customer-api:
+    ports: !reset []
+    environment: *api
+  ledger-api:
+    ports: !reset []
+    environment: *api
+  wallet-api:
+    ports: !reset []
+    environment: *api
+  transaction-api:
+    ports: !reset []
+    environment: *api
+  reporting-api:
+    ports: !reset []
+    environment: *api
+  jaeger:
+    ports: !reset []
+  otel-collector:
+    ports: !reset []
+  prometheus:
+    ports: !override ["127.0.0.1:39090:9090"]
+    command: ["--config.file=/etc/prometheus/prometheus.yml", "--web.enable-remote-write-receiver"]
+  grafana:
+    ports: !override ["127.0.0.1:3300:3000"]
+    volumes:
+      - ./tests/load/observability/datasources.yml:/etc/grafana/provisioning/datasources/datasources.yml:ro
+      - ./tests/load/observability/dashboards.yml:/etc/grafana/provisioning/dashboards/load.yml:ro
+      - ./tests/load/observability/vault-load.json:/var/lib/grafana/dashboards/vault-load.json:ro
+  loki:
+    ports: !reset []
+  alloy:
+    ports: !reset []
+  k6:
+    image: grafana/k6:1.8.2
+    user: "${LOAD_RUNNER_UID:-12345}:${LOAD_RUNNER_GID:-12345}"
+    profiles: [load-runner]
+    working_dir: /work
+    environment:
+      PROFILE: "${LOAD_PROFILE:-smoke}"
+      SUITE: "${LOAD_SUITE:-all}"
+      MIN_ENDPOINT_SAMPLES: "${LOAD_MIN_ENDPOINT_SAMPLES:-}"
+      RUN_ID: "${LOAD_RUN_ID:?Run tests/load/Run-LoadTests.ps1}"
+      LOAD_ACKNOWLEDGE: isolated-vault-load
+      CLIENT_ID: vault-load
+      CLIENT_SECRET: "${LOAD_CLIENT_SECRET}"
+      TEST_PASSWORD: "${LOAD_TEST_PASSWORD:?Run tests/load/Run-LoadTests.ps1}"
+      K6_WEB_DASHBOARD: "true"
+      K6_WEB_DASHBOARD_PORT: "-1"
+      K6_WEB_DASHBOARD_EXPORT: /results/dashboard.html
+      K6_PROMETHEUS_RW_SERVER_URL: http://prometheus:9090/api/v1/write
+      K6_PROMETHEUS_RW_TREND_STATS: p(95),p(99),avg,max
+      K6_PROMETHEUS_RW_STALE_MARKERS: "true"
+    volumes:
+      - ./tests/load:/work:ro
+      - "${LOAD_RESULTS_DIR:?Run tests/load/Run-LoadTests.ps1}:/results"
+

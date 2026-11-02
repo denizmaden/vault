@@ -9,3 +9,6 @@ Codex
 src/services/market-data/Vault.Services.MarketData.Api/wwwroot
 **/*.user
 **/tempkey.jwk
+tests/load
+.env
+.env.*
