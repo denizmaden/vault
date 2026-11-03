@@ -6,6 +6,7 @@ using Microsoft.Extensions.Options;
 using Microsoft.OpenApi;
 using Vault.BuildingBlocks.Api;
 using Vault.BuildingBlocks.Api.HealthChecks;
+using Vault.Platform.Observability;
 using Vault.Services.Identity.Api.Configuration;
 using Vault.Services.Identity.Api.IdentityServer;
 using Vault.Services.Identity.Application;
@@ -15,6 +16,7 @@ using Vault.Services.Identity.Infrastructure.Persistence;
 using Vault.Services.Identity.Infrastructure.Persistence.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.AddVaultObservability("Vault.Identity", "1.0.0");
 
 builder.Services
     .AddOptions<IdentityServerSettings>()
@@ -127,6 +129,7 @@ builder.Services.AddAuthorization(options =>
 var app = builder.Build();
 await app.Services.MigrateIdentityDatabaseAsync();
 
+app.UseVaultObservability();
 app.UseBuildingBlocksApi();
 app.UseSwagger();
 app.UseSwaggerUI(options =>

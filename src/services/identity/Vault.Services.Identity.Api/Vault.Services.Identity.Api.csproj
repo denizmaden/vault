@@ -10,6 +10,7 @@
     <ProjectReference Include="..\Vault.Services.Identity.Application\Vault.Services.Identity.Application.csproj" />
     <ProjectReference Include="..\Vault.Services.Identity.Infrastructure\Vault.Services.Identity.Infrastructure.csproj" />
     <ProjectReference Include="..\..\..\building-blocks\Vault.BuildingBlocks.Api\Vault.BuildingBlocks.Api.csproj" />
+    <ProjectReference Include="..\..\..\platform\Vault.Platform.Observability\Vault.Platform.Observability.csproj" />
   </ItemGroup>
 
   <ItemGroup>

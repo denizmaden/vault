@@ -35,6 +35,7 @@ services:
       IdentityServer__IssuerUri: http://identity-api:8080
       IdentityServer__SwaggerClientId: vault-load
       IdentityServer__SwaggerClientSecret: "${LOAD_CLIENT_SECRET:?Run tests/load/Run-LoadTests.ps1}"
+      VAULT_OTEL_TRACE_SAMPLING_RATIO: "0.1"
   customer-api:
     ports: !reset []
     environment: *api
