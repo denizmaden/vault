@@ -3,8 +3,35 @@ $summaryPath = Join-Path $ResultsPath 'summary.json'
 if (-not (Test-Path -LiteralPath $summaryPath)) { return }
 $summary = Get-Content -LiteralPath $summaryPath -Raw | ConvertFrom-Json
 $result = Get-Content -LiteralPath (Join-Path $ResultsPath 'result.json') -Raw | ConvertFrom-Json
+$reportTitle = "Vault $($result.profile)/$($result.suite) - $($result.runId)"
+# k6 exports a self-contained HTML file with a compressed JSON event stream.
+# Change its display title only; leave the measured samples and event data intact.
+$htmlPath = Join-Path $ResultsPath 'dashboard.html'
+if (Test-Path -LiteralPath $htmlPath) {
+    $html = [IO.File]::ReadAllText($htmlPath)
+    $html = [regex]::Replace($html, '<title>[^<]*</title>', "<title>$([Net.WebUtility]::HtmlEncode($reportTitle))</title>")
+    $embedded = [regex]::Match($html, '(<script id="data"[^>]*>)([^<]*)(</script>)')
+    if (-not $embedded.Success) { throw 'Unrecognized k6 HTML report: compressed data script is missing.' }
+    $inputStream = [IO.MemoryStream]::new([Convert]::FromBase64String($embedded.Groups[2].Value))
+    $gzip = [IO.Compression.GZipStream]::new($inputStream, [IO.Compression.CompressionMode]::Decompress)
+    $reader = [IO.StreamReader]::new($gzip)
+    try { $events = $reader.ReadToEnd() } finally { $reader.Dispose(); $inputStream.Dispose() }
+    $titlePattern = [regex]::new('(?m)^(\{"event":"config","data":\{"title":)"[^"\\]*(?:\\.[^"\\]*)*"')
+    if (-not $titlePattern.IsMatch($events)) { throw 'Unrecognized k6 HTML report: dashboard configuration title is missing.' }
+    $titleJson = ConvertTo-Json -InputObject $reportTitle -Compress
+    $events = $titlePattern.Replace($events, [System.Text.RegularExpressions.MatchEvaluator]{ param($match) $match.Groups[1].Value + $titleJson }, 1)
+    $outputStream = [IO.MemoryStream]::new()
+    $gzip = [IO.Compression.GZipStream]::new($outputStream, [IO.Compression.CompressionLevel]::Optimal, $true)
+    try {
+        $bytes = [Text.Encoding]::UTF8.GetBytes($events)
+        $gzip.Write($bytes, 0, $bytes.Length)
+    } finally { $gzip.Dispose() }
+    try { $encoded = [Convert]::ToBase64String($outputStream.ToArray()) } finally { $outputStream.Dispose() }
+    $html = $html.Substring(0, $embedded.Groups[2].Index) + $encoded + $html.Substring($embedded.Groups[2].Index + $embedded.Groups[2].Length)
+    [IO.File]::WriteAllText($htmlPath, $html)
+}
 $lines = [System.Collections.Generic.List[string]]::new()
-$lines.Add('# Vault performance result')
+$lines.Add("# $reportTitle")
 $lines.Add('')
 $lines.Add("Run: $($result.runId); profile/suite: $($result.profile)/$($result.suite); passed: $($result.passed)")
 $lines.Add("k6 process exit: $($result.k6ExitCode). Missing exit status in older reports must be checked in runner output.")

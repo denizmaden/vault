@@ -12,7 +12,9 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $workspace = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../..'))
-$runId = '{0}-{1}' -f (Get-Date).ToUniversalTime().ToString('yyyyMMdd-HHmmss'), ([Guid]::NewGuid().ToString('N').Substring(0, 8))
+$Profile = $Profile.ToLowerInvariant()
+$Suite = $Suite.ToLowerInvariant()
+$runId = '{0}-{1}-{2}' -f $Profile, (Get-Date).ToUniversalTime().ToString('yyyyMMdd-HHmmss'), ([Guid]::NewGuid().ToString('N').Substring(0, 8))
 $runStartedAt = [DateTime]::UtcNow.ToString('O')
 $resultsPath = Join-Path $PSScriptRoot "results/$runId"
 New-Item -ItemType Directory -Path $resultsPath -Force | Out-Null
@@ -73,6 +75,9 @@ try {
         $env:LOAD_RUNNER_GID = '12345'
     }
     $env:COMPOSE_PARALLEL_LIMIT = '1'
+    # Keep the run identity even when startup fails before measurement begins.
+    @{ runId=$runId; profile=$Profile; suite=$Suite; startedAt=$runStartedAt; project='vault-load' } |
+        ConvertTo-Json | Out-File (Join-Path $resultsPath 'environment.json') -Encoding utf8
     Invoke-DockerChecked -Arguments @('info', '--format', '{{.ServerVersion}}')
     Invoke-DockerChecked ($composeArgs + @('config', '--quiet'))
     $apis = @('identity-api','customer-api','ledger-api','wallet-api','transaction-api','reporting-api')
